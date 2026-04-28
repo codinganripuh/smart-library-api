@@ -22,5 +22,25 @@ export const LoanController = {
     } catch (err) {
       res.status(500).json({ error: err.message });
     }
+  },
+  async getTopBorrowers(req, res) {
+  try {
+    const rows = await LoanModel.getTopBorrowers();
+    const data = rows.map(r => ({
+      member_id: r.member_id,
+      full_name: r.full_name,
+      email: r.email,
+      member_type: r.member_type,
+      total_loans: r.total_loans,
+      last_loan_date: r.last_loan_date,
+      favorite_book: {
+        title: r.favorite_book_title,
+        times_borrowed: r.favorite_book_times
+      }
+    }));
+    res.json({ message: 'Top 3 peminjam buku berhasil diambil', data });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
+},
 };

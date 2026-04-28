@@ -41,5 +41,28 @@ export const LoanModel = {
     `;
     const result = await pool.query(query);
     return result.rows;
-  }
+  },
+  async getTopBorrowers() {
+  const query = `
+    WITH loan_counts AS (
+      SELECT l.member_id, COUNT(*)::int AS total_loans, MAX(l.loan_date) AS last_loan_date
+      FROM loans l GROUP BY l.member_id ORDER BY total_loans DESC LIMIT 3
+    ),
+    favorite_books AS (
+      SELECT DISTINCT ON (l.member_id) l.member_id, b.title, COUNT(*)::int AS times_borrowed
+      FROM loans l JOIN books b ON b.id = l.book_id
+      WHERE l.member_id IN (SELECT member_id FROM loan_counts)
+      GROUP BY l.member_id, b.title ORDER BY l.member_id, times_borrowed DESC
+    )
+    SELECT m.id AS member_id, m.full_name, m.email, m.member_type,
+      lc.total_loans, lc.last_loan_date, fb.title AS favorite_book_title, fb.times_borrowed AS favorite_book_times
+    FROM loan_counts lc
+    JOIN members m ON m.id = lc.member_id
+    JOIN favorite_books fb ON fb.member_id = lc.member_id
+    ORDER BY lc.total_loans DESC
+  `;
+  const result = await pool.query(query);
+  return result.rows;
+},
 };
+
